@@ -199,7 +199,7 @@ function calcBenchmarks() {
     b['战败跟进率'] = calcMedian(dm.map(m => (m['战败_战败跟进率']||0)*100));
     b['战败转化率'] = calcMedian(dm.map(m => (m['战败_战败转化率']||0)*100));
     b['续保GMV占比'] = calcMedian(dm.map(m => m['GMV']>0 ? m['续保GMV']/m['GMV']*100 : 0));
-    // 下月商机基准（设备在2026年8月到期的客户数据）
+    // 下月商机基准（设备在2026年7月到期的客户数据）
     ['次年','新增','往年','战败'].forEach(function(dim) {
       var pfx = '下月_' + dim + '_' + dim;
       b['下月' + dim + '设备数'] = calcMedian(dm.map(m => m[pfx + '设备数'] || 0));
@@ -212,7 +212,7 @@ function calcBenchmarks() {
 
 // 初始化数据
 (function initData() {
-  allMembers = EMBEDDED_DATA.members.filter(function(m) { return m['GMV'] > 0; });
+  allMembers = EMBEDDED_DATA.members.filter(function(m) { return m['GMV'] > 0 || m['GMV目标'] > 0 || m['次年_次年设备数'] > 0; });
   allMembers.sort(function(a,b) { return a['业务员'].localeCompare(b['业务员'], 'zh'); });
   allMembers.forEach(function(m) {
     m['达成率'] = m['GMV目标'] > 0 ? m['GMV'] / m['GMV目标'] * 100 : 0;
@@ -262,7 +262,7 @@ function showDeptSummary(dept) {
   document.getElementById('deptSummaryPanel').style.display = 'block';
   document.getElementById('diagnosePanel').innerHTML = '';
 
-  var TIME_PROGRESS = 0.0;
+  var TIME_PROGRESS = 100.0;
 
   // 汇总计算
   var totalTarget = 0, totalGMV = 0, totalRenewGMV = 0, totalNonRenewGMV = 0;
@@ -415,11 +415,11 @@ function showDeptSummary(dept) {
       '</table>' +
     '</div>' +
     '<div class="card">' +
-      '<h2>四维度平均过程指标 — 2026年7月到期</h2>' +
+      '<h2>四维度平均过程指标 — 2026年6月到期</h2>' +
       '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">' + dimSummaryHtml + '</div>' +
     '</div>' +
     '<div class="card">' +
-      '<h2>四维度平均过程指标 — 2026年8月到期 <span style="font-weight:400;font-size:12px;color:#888;">（提前关注）</span></h2>' +
+      '<h2>四维度平均过程指标 — 2026年7月到期 <span style="font-weight:400;font-size:12px;color:#888;">（提前关注）</span></h2>' +
       '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">' + dimSummaryNextHtml + '</div>' +
       '<p style="margin-top:10px;font-size:12px;color:#999;">保险客户可提前一个月续保，请关注下月客户储备与跟进情况。</p>' +
     '</div>' +
@@ -463,7 +463,7 @@ function runDiagnose(name) {
   var bench = deptBenchmarks[dept] || {};
 
   var findings = [];
-  var TIME_PROGRESS = 0.0;
+  var TIME_PROGRESS = 100.0;
 
   // Level 1: 业绩结果
   var achRate = m['达成率'];
@@ -511,7 +511,7 @@ function runDiagnose(name) {
     });
   }
 
-  // Level 3: 各维度过程诊断（2026年7月到期）
+  // Level 3: 各维度过程诊断（2026年6月到期）
   var dims = ['次年', '新增', '往年', '战败'];
   var dimResults = {};
 
@@ -548,7 +548,7 @@ function runDiagnose(name) {
     }
   });
 
-  // Level 3延伸: 2026年8月到期商机过程诊断
+  // Level 3延伸: 2026年7月到期商机过程诊断
   var dimResultsNext = {};
   dims.forEach(function(dim) {
     var pfx = '下月_' + dim + '_' + dim;
@@ -578,7 +578,7 @@ function runDiagnose(name) {
       findings.push({
         level: 3,
         tag: '下月' + dim + '商机: ' + issues.join('+'),
-        detail: '2026年8月到期设备' + equip + '（中位' + equipBench + '）、跟进率' + followRate.toFixed(0) + '%（中位' + followBench.toFixed(0) + '%）、转化率' + dealRate.toFixed(0) + '%（中位' + dealBench.toFixed(0) + '%）',
+        detail: '2026年7月到期设备' + equip + '（中位' + equipBench + '）、跟进率' + followRate.toFixed(0) + '%（中位' + followBench.toFixed(0) + '%）、转化率' + dealRate.toFixed(0) + '%（中位' + dealBench.toFixed(0) + '%）',
         severity: dimResultsNext[dim].status === 'bad' ? 'fail' : 'warn'
       });
     }
@@ -617,7 +617,7 @@ function runDiagnose(name) {
 
 function generateRecommendations(m, dimResults, dimResultsNext, rootCauses, renewRatio, bench) {
   var recs = [];
-  var TIME_PROGRESS = 0.0;
+  var TIME_PROGRESS = 100.0;
   var metTarget = m['GMV目标'] > 0 && m['达成率'] >= TIME_PROGRESS;
 
   rootCauses.forEach(function(cause) {
@@ -697,7 +697,7 @@ function generateRecommendations(m, dimResults, dimResultsNext, rootCauses, rene
     var drn = dimResultsNext[d];
     if (!drn || drn.issues.length === 0 || drn.equip === 0) continue;
     var label = nxDims[d] || d;
-    var eqInfo = '2026年8月到期' + d + '设备数' + drn.equip + '（中位' + drn.equipBench + '）';
+    var eqInfo = '2026年7月到期' + d + '设备数' + drn.equip + '（中位' + drn.equipBench + '）';
     var hasQty = drn.issues.indexOf('量不足') >= 0;
     var hasFw = drn.issues.indexOf('跟进低') >= 0;
     var hasDeal = drn.issues.indexOf('转化低') >= 0;
@@ -711,7 +711,7 @@ function generateRecommendations(m, dimResults, dimResultsNext, rootCauses, rene
       fwWarnings.push({
         priority: 'primary',
         title: '【预警】下月' + label + '跟进待启动',
-        desc: eqInfo + '，客户量充足但跟进率仅' + drn.followRate.toFixed(0) + '%（中位' + drn.followBench.toFixed(0) + '%）。建议尽快启动2026年8月到期客户的续保联系。'
+        desc: eqInfo + '，客户量充足但跟进率仅' + drn.followRate.toFixed(0) + '%（中位' + drn.followBench.toFixed(0) + '%）。建议尽快启动2026年7月到期客户的续保联系。'
       });
     } else if (hasDeal) {
       dealWarnings.push({
@@ -739,7 +739,7 @@ var radarChart = null;
 
 function renderDiagnose(m, dept, bench, findings, dimResults, dimResultsNext, rootCauses, recs) {
   var panel = document.getElementById('diagnosePanel');
-  var TIME_PROGRESS = 0.0;
+  var TIME_PROGRESS = 100.0;
 
   var hasTarget = m['GMV目标'] > 0;
   var achColor = !hasTarget ? '#999' : (m['达成率'] >= TIME_PROGRESS ? '#2e7d32' : (m['达成率'] >= 60 ? '#e65100' : '#c62828'));
@@ -816,7 +816,7 @@ function renderDiagnose(m, dept, bench, findings, dimResults, dimResultsNext, ro
         '<div class="metric-box" style="background:' + achBg + ';border-color:' + achColor + '33;">' +
           '<div class="metric-val" style="color:' + achColor + ';">' + (hasTarget ? m['达成率'].toFixed(1) + '%' : '未设定') + '</div>' +
           '<div class="metric-label">GMV达成率（' + (hasTarget ? '目标¥' + (m['GMV目标']/10000).toFixed(0) + '万' : '目标未录入') + '）</div>' +
-          '<div class="metric-vs">时间进度 0.0%</div>' +
+          '<div class="metric-vs">时间进度 100.0%</div>' +
         '</div>' +
         '<div class="metric-box neutral">' +
           '<div class="metric-val">¥' + (m['GMV']/10000).toFixed(1) + '</div>' +
@@ -843,13 +843,13 @@ function renderDiagnose(m, dept, bench, findings, dimResults, dimResultsNext, ro
       '<div class="decision-path">' + pathHtml + '</div>' +
     '</div>' +
     '<div class="card">' +
-      '<h2>商机四维度过程诊断 — 2026年7月到期</h2>' +
+      '<h2>商机四维度过程诊断 — 2026年6月到期</h2>' +
       '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">' + dimCards + '</div>' +
     '</div>' +
     '<div class="card">' +
-      '<h2>商机四维度过程诊断 — 2026年8月到期 <span style="font-weight:400;font-size:12px;color:#888;">（提前关注）</span></h2>' +
+      '<h2>商机四维度过程诊断 — 2026年7月到期 <span style="font-weight:400;font-size:12px;color:#888;">（提前关注）</span></h2>' +
       '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">' + dimCardsNext + '</div>' +
-      '<p style="margin-top:10px;font-size:12px;color:#888;">保险客户可提前一个月续保，建议在当月下旬开始关注2026年8月到期客户的跟进与转化。</p>' +
+      '<p style="margin-top:10px;font-size:12px;color:#888;">保险客户可提前一个月续保，建议在当月下旬开始关注2026年7月到期客户的跟进与转化。</p>' +
     '</div>' +
     '<div class="grid2">' +
       '<div class="card"><h2>根因定位</h2><ol style="padding-left:18px;font-size:14px;">' + causeHtml + '</ol></div>' +
@@ -889,7 +889,7 @@ function renderDiagnose(m, dept, bench, findings, dimResults, dimResultsNext, ro
       (['次年','新增','往年','战败'].reduce(function(s,d){return s+(m[d+'_'+d+'跟进率']||0);},0)/4*100)
     ];
     var benchData = [
-      0.0,
+      100.0,
       bench['次年转化率'] || 0,
       bench['新增转化率'] || 0,
       bench['往年转化率'] || 0,
